@@ -1,0 +1,305 @@
+.Dd January 31, 2022
+.Dt OH_BROTHER 1
+.Os
+.Sh NAME
+.Nm oh_brother
+.Nd raster data filter for certain Brother printers
+.Sh SYNOPSIS
+.Nm
+.Op Fl resolution Ar resolution
+.Op Fl source_tray Ar tray
+.Op Fl media_type Ar type
+.Op Fl time_out_sleep Ar time
+.Op Fl paper Ar paper
+.Op Fl suppress_job Pq Cm YES | NO
+.Op Fl emit_hqmmode Pq Cm YES | NO
+.Op Fl suppress_ras1200mode_off Pq Cm YES | NO
+.Op Fl copies Ar copies
+.Op Fl duplex Pq Cm SIMPLEX | LONG | SHORT
+.Op Fl width Ar width
+.Op Fl height Ar height
+.Sh DESCRIPTION
+.Nm
+takes raw raster data on standard input and produces output which can be sent
+to a printer.
+.Pp
+The input data is raw raster data, one bit per dot.
+Each row should be padded with zero-bits to a full byte.
+Only full pages of data are processed.
+Any partial data at the end of the input is discarded.
+.Pp
+A variety of options are provided for configuring the printer, accommodating
+different printer models, and describing the input data:
+.Bl -tag -width indent
+.It Fl resolution Ar resolution
+Set the resolution mode of the printer and describe the resolution (in DPI) of
+the input data.
+Supported values are
+.Cm 600
+(the default),
+.Cm 300 , 1200 , HQ1200A , HQ1200B ,
+and
+.Cm 600x300 .
+.It Fl source_tray Ar tray
+Select the source tray the printer should feed paper from for this job.
+Supported values are
+.Cm ST_AUTO
+(the default),
+.Cm TRAY1 , TRAY2 , TRAY3 , TRAY4 , TRAY5 , MANUAL ,
+and
+.Cm MPTRAY .
+.It Fl media_type Ar type
+Describes the type of media being printed on.
+The printer may use this to tune the print engine for good performance.
+Supported values are
+.Cm REGULAR
+(the default),
+.Cm THIN , THICK , THICK2 , TRANSPARENCY , ENVELOPES , ENVTHICK , RECYCLED .
+See
+.Sx Media Types
+for more details.
+.It Fl time_out_sleep Ar time
+When set to
+.Cm 1
+or more, includes commands in the output to enable automatic
+sleep on the printer and set the default sleep time-out to the specified
+number of minutes.
+A setting of
+.Cm 0
+suppresses the output of these commands
+(but does not cause commands to disable automatic sleep to be included).
+The supported range for
+.Ar time
+is
+.Cm 0 Ns - Ns
+.Cm 99
+minutes.
+.It Fl paper Ar paper
+Describes the paper size being printed on.
+The input data must be the same size as the selected paper unless
+.Ar width
+or
+.Ar height
+is specified.
+Supported values are
+.Cm LEGAL , LETTER
+(the default),
+.Cm A4 , EXECUTIVE , JISB5 , B5 , A5 , B6 , A6 , C5 , DL , COM10 ,
+and
+.Cm MONARCH .
+See
+.Sx Paper
+for more details.
+.It Fl suppress_job Ar suppress_job
+.Cm YES
+Suppresses PJL
+.Dq JOB
+and
+.Dq EOJ
+commands.
+I think some models don't support them.
+The default is
+.Cm NO .
+.It Fl emit_hqmmode Ar emit_hqmmode
+.Cm YES
+causes the
+.Dq HQMMODE
+PJL environment variable to be set when certain resolutions are selected.
+I think some models require this.
+The default is
+.Cm NO .
+.It Fl suppress_ras1200mode_off Ar suppress_ras1200mode_off
+.Cm YES
+suppresses
+.Dq RAS1200MODE
+PJL environment variable from being set to
+.Dq OFF
+when certain resolutions are selected.
+I think some models do not support this environment variable and have trouble
+if it's set.
+The default is
+.Cm NO .
+.It Fl copies Ar copies
+Set the number of copies to print.
+When greater than
+.Cm 1 ,
+this causes a PCL command to be sent to the printer to set the number of
+copies.
+Supported values are
+.Cm 1 - 999 .
+.It Fl duplex Ar duplex
+This setting can be used to cause two pages to be printed on each sheet of
+paper (one on the front and one on the back).
+The default is
+.Cm SIMPLEX ,
+which causes a single page to be printed on the front of each sheet.
+.Pp
+.Cm LONG
+sets the orientation of the pages on the front and back of a sheet so that
+they'll both have the same side up when the finished document is bound along
+its long edge.
+This is the most common setting.
+.Pp
+.Cm SHORT
+sets the orientation of the pages on the front and back of a sheet so that
+they'll both have the same side up when the finished document is bound along
+its short edge.
+.It Fl width Ar width
+If the input data rows are not as wide as the selected paper size, give the
+actual width in dots at the selected resolution with this option.
+Padding will be added at the beginning of each row to roughly center the input
+data in the width of the selected paper size.
+.It Fl height Ar height
+If the input data pages are not as tall as the selected paper size, give
+the actual height in dots at the selected resolution with this option.
+No padding is applied.
+.El
+.Ss Media Types
+The table below gives a rough idea of what the different media type settings
+might be good for, but check your printer manual for detailed print media
+specifications, which likely vary by model.
+It may also be necessary to make physical adjustments to the printer when
+printing on certain media.
+For example, the HL-L2300D requires that the back output tray be opened when
+printing on stiffer media and that two levers be moved when printing on thicker
+media.
+.Bl -tag -width indent
+.It Cm REGULAR
+Use this setting for standard copier or laser-printer paper, typically 20 pound
+weight.
+May also work for thin envelopes.
+.It Cm THIN
+This setting is for thinner paper, perhaps as light as 16 pounds.
+.It Cm THICK
+This setting is for somewhat thicker paper, perhaps as heavy as 43 pounds.
+It may also work for labels.
+.It Cm THICK2
+This setting is for even thicker paper (bond paper, for example) on models that
+support it.
+.It Cm TRANSPARENCY
+Use this setting for printing on transparency film if your model supports it.
+.It Cm ENVELOPES
+Use this setting for regular envelopes.
+Thin envelopes may work with
+.Cm REGULAR .
+.It Cm ENVTHICK
+This setting is meant for thick envelopes.
+.It Cm RECYCLED
+Similar to
+.Cm REGULAR
+but for recycled copy paper.
+.El
+.Ss Paper
+This table gives some more details on the supported paper size names and the
+paper sizes they refer to.
+All paper sizes have a 1/6" margin which is not printable.
+Blank input data should still be provided for the margin area unless alternate
+.Ar width
+and
+.Ar height
+are given.
+Some printer models support more paper sizes than listed or support arbitrary
+paper sizes (within limits).
+To print on a paper size not listed, select the next-larger paper size and
+provide appropriate
+.Ar width
+and
+.Ar height
+settings.
+.Bl -tag -width indent
+.It Cm LEGAL
+US legal paper size: 8-1/2 x 14".
+.It Cm LETTER
+US letter paper size: 8-1/2 x 11".
+.It Cm A4
+ISO A4 paper size: 210 x 297mm.
+.It Cm EXECUTIVE
+US executive paper size: 7-1/4 x 10-1/2". Also called "monarch," but
+.Cm MONARCH
+is used as the paper name for the envelope which fits this size paper.
+.It Cm JISB5
+JIS B5 paper size: 182 x 257mm.
+.It Cm B5
+ISO B5 paper size: 176 x 250mm.
+It's little smaller than JIS B5.
+.It Cm A5
+ISO A5 paper size: 148 x 210mm.
+This is a half-sheet of A4.
+.It Cm B6
+ISO B6 paper size: 125 x 176mm.
+This is a half-sheet of B5.
+.It Cm A6
+ISO A6 paper size: 105 x 148mm.
+This is a quarter-sheet of A4.
+.It Cm C5
+ISO C5 envelope: 162 x 229mm.
+It fits A4 folded in half.
+.It Cm DL
+DIN long envelope: 110 x 220mm.
+It fits A4 folded in thirds.
+.It Cm COM10
+US #10 commercial envelope: 4-1/8 x 9-1/2".
+It fits letter folded in thirds.
+.It Cm MONARCH
+US monarch envelope: 3-7/8 x 7-1/2".
+It fits executive ("monarch") folded in thirds.
+.El
+.Pp
+Unless
+.Ar width
+or
+.Ar height
+are given, the input data is assumed to be the same size as the selected
+paper.
+This table gives paper dimensions in dots at 600 DPI.
+For 300 DPI, halve the values.
+For 1200 DPI, double them.
+Remember that the input data should be padded out to a full byte (this is
+the way Ghostscript's
+.Dq bit
+driver works by default).
+.Bl -column "MMMMMMMMM" "MMMMMM" "MMMMMM"
+Ta Width Ta Height
+LEGAL Ta 5,100 Ta 8,400
+LETTER Ta 5,100 Ta 6,600
+A4 Ta 4,960 Ta 7,015
+EXECUTIVE Ta 4,350 Ta 6,300
+JISB5 Ta 4,300 Ta 6,070
+B5 Ta 4,160 Ta 5,900
+A5 Ta 3,505 Ta 4,960
+B6 Ta 2,950 Ta 4,160
+A6 Ta 2,480 Ta 3,505
+C5 Ta 3,835 Ta 5,410
+DL Ta 2,600 Ta 5,195
+COM10 Ta 2,480 Ta 5,700
+MONARCH Ta 2,325 Ta 4,500
+.El
+.Sh EXIT STATUS
+.Ex -std
+Specific exit codes are provided in certain circumstances:
+.Bl -tag -width indent
+.It Dv EX_USAGE
+This exit code is provided when the given
+.Ar width
+or
+.Ar height
+exceeds the width or height of the selected paper size.
+.It Dv EX_OSERR
+This exit code is provided when memory for the input page buffer, output
+block buffer, or output row buffer cannot be allocated.
+.El
+.Sh SEE ALSO
+Your printer's user guide.
+.Sh HISTORY
+Brother has provided binary Linux CUPS drivers for their laser printers for
+quite some time.
+Peter De Wachter made an open source CUPS driver around 2013 which is likely
+better tested and better supported than this program.
+.Sh BUGS
+.Nm
+has not been tested with a wide variety of printers and settings.
+I have only used it with my HL-L2300D, but I think it will support many of
+Brother's other non-PCL laser printers.
+.Pp
+This manual page should include a list of tested and supported models along
+with notes on which combinations of options are supported or required.
